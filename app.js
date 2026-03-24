@@ -120,28 +120,60 @@ function assignTask() {
 
   const userId = document.getElementById("userSelect").value;
   const task = document.getElementById("adminTaskInput").value;
-  const effort = document.getElementById("adminEffortInput").value;
+  const effort = Number(document.getElementById("adminEffortInput").value);
 
   if (!task || !effort) {
     alert("Enter task and effort");
     return;
   }
 
-  db.collection("tasks").add({
-    title: task,
-    effort: Number(effort),
-    status: "assigned",
-    userId: userId,
-    createdAt: Date.now()
-  })
-  .then(() => {
-    console.log("Task assigned");
+  // STEP 1: Get user capacity
+  db.collection("users").doc(userId).get().then((userDoc) => {
+    const capacity = userDoc.data().capacity;
 
-    document.getElementById("adminTaskInput").value = "";
-    document.getElementById("adminEffortInput").value = "";
+    // STEP 2: Get current workload
+    db.collection("tasks")
+      .where("userId", "==", userId)
+      .get()
+      .then((snapshot) => {
+
+        let currentEU = 0;
+
+        snapshot.forEach((doc) => {
+          currentEU += doc.data().effort;
+        });
+
+        const newTotal = currentEU + effort;
+
+        // STEP 3: DECISION LOGIC
+        if (newTotal > capacity + 5) {
+          alert("❌ Assignment blocked: User will be OVERLOADED");
+          return;
+        }
+
+        if (newTotal > capacity) {
+          const confirmAssign = confirm("⚠️ Warning: User may be overloaded. Continue?");
+          if (!confirmAssign) return;
+        }
+
+        // STEP 4: Assign task
+        db.collection("tasks").add({
+          title: task,
+          effort: effort,
+          status: "assigned",
+          userId: userId,
+          createdAt: Date.now()
+        })
+        .then(() => {
+          alert("✅ Task assigned successfully");
+
+          document.getElementById("adminTaskInput").value = "";
+          document.getElementById("adminEffortInput").value = "";
+        });
+
+      });
   });
 }
-
 
 // ---------------- USER FUNCTIONS ----------------
 
