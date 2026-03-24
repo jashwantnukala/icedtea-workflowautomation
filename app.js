@@ -51,27 +51,36 @@ function logout() {
 // ---------------- AUTH STATE HANDLER ----------------
 
 auth.onAuthStateChanged((user) => {
-  const currentPage = window.location.pathname;
+  const page = window.location.pathname;
 
-  // NOT logged in → redirect to login
-  if (!user && currentPage.includes("dashboard.html")) {
-    window.location.href = "login.html";
+  if (!user) {
+    if (!page.includes("login.html") && !page.includes("index.html")) {
+      window.location.href = "login.html";
+    }
+    return;
   }
 
-  // Logged in → redirect to dashboard
-  if (user && currentPage.includes("login.html")) {
-    window.location.href = "dashboard.html";
-  }
+  db.collection("users").doc(user.uid).get().then((doc) => {
+    const role = doc.data().role;
 
-  // If logged in on dashboard → load data
-  if (user && currentPage.includes("dashboard.html")) {
-    const userInfo = document.getElementById("userInfo");
-    if (userInfo) {
-      userInfo.innerText = "Logged in as: " + user.email;
+    // Redirect based on role
+    if (page.includes("login.html") || page.includes("index.html")) {
+      if (role === "admin") {
+        window.location.href = "admin.html";
+      } else {
+        window.location.href = "user.html";
+      }
     }
 
-    loadTasks(user.uid);
-  }
+    // Load correct data
+    if (page.includes("admin.html")) {
+      loadUsers();
+    }
+
+    if (page.includes("user.html")) {
+      loadTasks(user.uid);
+    }
+  });
 });
 
 
