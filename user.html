@@ -6,16 +6,34 @@
 </head>
 <body>
 
-  <h1>User Dashboard</h1>
-  <button onclick="logout()">Logout</button>
+  <div class="topbar">
+    <h2>User Dashboard</h2>
+    <button onclick="logout()">Logout</button>
+  </div>
 
-  <div class="card">
-    <h3>Your Workload</h3>
+  <div class="board">
 
+    <div class="column">
+      <h3>Assigned</h3>
+      <div id="assigned"></div>
+    </div>
+
+    <div class="column">
+      <h3>In Progress</h3>
+      <div id="inprogress"></div>
+    </div>
+
+    <div class="column">
+      <h3>Completed</h3>
+      <div id="completed"></div>
+    </div>
+
+  </div>
+
+  <div class="card workload">
+    <h3>Workload</h3>
     <p>Total EU: <span id="totalEU">0</span></p>
     <p>Status: <span id="status">Safe</span></p>
-
-    <ul id="taskList"></ul>
   </div>
 
   <!-- Firebase -->
