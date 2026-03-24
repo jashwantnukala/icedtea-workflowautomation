@@ -2,6 +2,7 @@ console.log("App started");
 
 // ---------------- AUTH ----------------
 
+// SIGN UP
 function signup() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
@@ -16,44 +17,67 @@ function signup() {
         capacity: 20
       });
 
-      console.log("User created");
+      document.getElementById("message").innerText = "Account created!";
     })
     .catch((error) => {
-      console.error(error.message);
+      document.getElementById("message").innerText = error.message;
     });
 }
 
+
+// LOGIN
 function login() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
   auth.signInWithEmailAndPassword(email, password)
     .then(() => {
-      console.log("Logged in");
+      window.location.href = "dashboard.html";
     })
     .catch((error) => {
-      console.error(error.message);
+      document.getElementById("message").innerText = error.message;
     });
 }
 
+
+// LOGOUT
 function logout() {
-  auth.signOut();
+  auth.signOut().then(() => {
+    window.location.href = "login.html";
+  });
 }
 
-// Detect logged-in user
+
+// ---------------- AUTH STATE HANDLER ----------------
+
 auth.onAuthStateChanged((user) => {
-  if (user) {
-    document.getElementById("userInfo").innerText = "Logged in as: " + user.email;
+  const currentPage = window.location.pathname;
+
+  // NOT logged in → redirect to login
+  if (!user && currentPage.includes("dashboard.html")) {
+    window.location.href = "login.html";
+  }
+
+  // Logged in → redirect to dashboard
+  if (user && currentPage.includes("login.html")) {
+    window.location.href = "dashboard.html";
+  }
+
+  // If logged in on dashboard → load data
+  if (user && currentPage.includes("dashboard.html")) {
+    const userInfo = document.getElementById("userInfo");
+    if (userInfo) {
+      userInfo.innerText = "Logged in as: " + user.email;
+    }
+
     loadTasks(user.uid);
-  } else {
-    document.getElementById("userInfo").innerText = "Not logged in";
   }
 });
 
 
 // ---------------- TASK SYSTEM ----------------
 
-// Add Task (assigned to current user)
+// ADD TASK
 function addTask() {
   const user = auth.currentUser;
 
@@ -65,6 +89,11 @@ function addTask() {
   const task = document.getElementById("taskInput").value;
   const effort = document.getElementById("effortInput").value;
 
+  if (!task || !effort) {
+    alert("Enter task and effort");
+    return;
+  }
+
   db.collection("tasks").add({
     title: task,
     effort: Number(effort),
@@ -74,14 +103,20 @@ function addTask() {
   })
   .then(() => {
     console.log("Task added");
+
+    document.getElementById("taskInput").value = "";
+    document.getElementById("effortInput").value = "";
+
     loadTasks(user.uid);
   });
 }
 
 
-// Load ONLY current user’s tasks
+// LOAD TASKS (ONLY USER'S TASKS)
 function loadTasks(userId) {
   const taskList = document.getElementById("taskList");
+  if (!taskList) return;
+
   taskList.innerHTML = "";
 
   let totalEU = 0;
@@ -109,12 +144,11 @@ function loadTasks(userId) {
       });
 
       updateWorkload(totalEU);
-
     });
 }
 
 
-// Delete
+// DELETE TASK
 function deleteTask(id) {
   db.collection("tasks").doc(id).delete()
     .then(() => {
@@ -123,7 +157,7 @@ function deleteTask(id) {
 }
 
 
-// Status update
+// UPDATE STATUS
 function updateStatus(id, currentStatus) {
   let newStatus =
     currentStatus === "assigned" ? "in-progress" :
@@ -144,7 +178,12 @@ function updateStatus(id, currentStatus) {
 function updateWorkload(totalEU) {
   const capacity = 20;
 
-  document.getElementById("totalEU").innerText = totalEU;
+  const totalEl = document.getElementById("totalEU");
+  const statusEl = document.getElementById("status");
+
+  if (!totalEl || !statusEl) return;
+
+  totalEl.innerText = totalEU;
 
   let statusText;
 
@@ -152,5 +191,5 @@ function updateWorkload(totalEU) {
   else if (totalEU < capacity + 5) statusText = "Warning";
   else statusText = "Overloaded";
 
-  document.getElementById("status").innerText = statusText;
+  statusEl.innerText = statusText;
 }
