@@ -6,26 +6,36 @@
 </head>
 <body>
 
-  <h1>Admin Dashboard</h1>
-  <button onclick="logout()">Logout</button>
+<h1>Admin Dashboard</h1>
+<button onclick="logout()">Logout</button>
 
-  <div class="card">
-    <h3>Assign Task</h3>
+<div class="card">
+  <h3>How it works</h3>
+  <p>
+    Assign tasks based on Effort Units (EU).  
+    The system prevents overload before assigning work.
+  </p>
+</div>
 
-    <select id="userSelect"></select>
-    <input type="text" id="adminTaskInput" placeholder="Task name">
-    <input type="number" id="adminEffortInput" placeholder="Effort (EU)">
+<div class="card">
+  <h3>Assign Task</h3>
 
-    <button onclick="assignTask()">Assign</button>
-  </div>
+  <select id="userSelect"></select>
+  <p id="userCapacityInfo"></p>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <input type="text" id="adminTaskInput" placeholder="Task name">
+  <input type="number" id="adminEffortInput" placeholder="Effort (EU)">
 
-  <script src="firebase.js"></script>
-  <script src="app.js"></script>
+  <button onclick="assignTask()">Assign Task</button>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+<script src="firebase.js"></script>
+<script src="app.js"></script>
 
 </body>
 </html>
