@@ -5,7 +5,6 @@ let currentUserRole = "user";
 
 // ---------------- AUTH ----------------
 
-// SIGNUP
 function signup() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
@@ -27,33 +26,27 @@ function signup() {
     });
 }
 
-// LOGIN
 function login() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
   auth.signInWithEmailAndPassword(email, password)
-    .then(() => {
-      // Redirect handled automatically
-    })
     .catch((error) => {
       document.getElementById("message").innerText = error.message;
     });
 }
 
-// LOGOUT
 function logout() {
   auth.signOut().then(() => {
     window.location.href = "login.html";
   });
 }
 
-// ---------------- AUTH STATE (CORE LOGIC) ----------------
+// ---------------- AUTH STATE ----------------
 
 auth.onAuthStateChanged((user) => {
   const page = window.location.pathname;
 
-  // NOT logged in → redirect
   if (!user) {
     if (!page.includes("login.html") && !page.includes("index.html")) {
       window.location.href = "login.html";
@@ -61,36 +54,31 @@ auth.onAuthStateChanged((user) => {
     return;
   }
 
-  // Get role
   db.collection("users").doc(user.uid).get().then((doc) => {
     currentUserRole = doc.data().role;
 
-    // Redirect based on role
+    // Redirect
     if (page.includes("login.html") || page.includes("index.html")) {
-      if (currentUserRole === "admin") {
-        window.location.href = "admin.html";
-      } else {
-        window.location.href = "user.html";
-      }
+      window.location.href =
+        currentUserRole === "admin" ? "admin.html" : "user.html";
       return;
     }
 
-    // ADMIN PAGE
+    // Admin page
     if (page.includes("admin.html")) {
       loadUsers();
     }
 
-    // USER PAGE
+    // User page
     if (page.includes("user.html")) {
       loadTasks(user.uid);
     }
   });
 });
 
+// ---------------- ADMIN ----------------
 
-// ---------------- ADMIN FUNCTIONS ----------------
-
-// LOAD USERS INTO DROPDOWN
+// Load users
 function loadUsers() {
   const userSelect = document.getElementById("userSelect");
   if (!userSelect) return;
@@ -110,8 +98,21 @@ function loadUsers() {
   });
 }
 
+// Show capacity when user selected
+document.addEventListener("change", function (e) {
+  if (e.target.id === "userSelect") {
+    const userId = e.target.value;
 
-// ASSIGN TASK
+    db.collection("users").doc(userId).get().then((doc) => {
+      const capacity = doc.data().capacity;
+
+      document.getElementById("userCapacityInfo").innerText =
+        "User Capacity: " + capacity + " EU";
+    });
+  }
+});
+
+// Smart Assign Task
 function assignTask() {
   if (currentUserRole !== "admin") {
     alert("Only admin can assign tasks");
@@ -127,36 +128,31 @@ function assignTask() {
     return;
   }
 
-  // STEP 1: Get user capacity
   db.collection("users").doc(userId).get().then((userDoc) => {
     const capacity = userDoc.data().capacity;
 
-    // STEP 2: Get current workload
     db.collection("tasks")
       .where("userId", "==", userId)
       .get()
       .then((snapshot) => {
 
         let currentEU = 0;
-
         snapshot.forEach((doc) => {
           currentEU += doc.data().effort;
         });
 
         const newTotal = currentEU + effort;
 
-        // STEP 3: DECISION LOGIC
         if (newTotal > capacity + 5) {
           alert("❌ Assignment blocked: User will be OVERLOADED");
           return;
         }
 
         if (newTotal > capacity) {
-          const confirmAssign = confirm("⚠️ Warning: User may be overloaded. Continue?");
+          const confirmAssign = confirm("⚠️ Warning: Overload risk. Continue?");
           if (!confirmAssign) return;
         }
 
-        // STEP 4: Assign task
         db.collection("tasks").add({
           title: task,
           effort: effort,
@@ -165,7 +161,7 @@ function assignTask() {
           createdAt: Date.now()
         })
         .then(() => {
-          alert("✅ Task assigned successfully");
+          alert("✅ Task assigned");
 
           document.getElementById("adminTaskInput").value = "";
           document.getElementById("adminEffortInput").value = "";
@@ -175,9 +171,9 @@ function assignTask() {
   });
 }
 
-// ---------------- USER FUNCTIONS ----------------
+// ---------------- USER ----------------
 
-// LOAD TASKS INTO COLUMNS
+// Load tasks into board
 function loadTasks(userId) {
   let totalEU = 0;
 
@@ -211,37 +207,27 @@ function loadTasks(userId) {
           <button onclick="updateStatus('${id}', '${data.status}')">Next</button>
         `;
 
-        if (data.status === "assigned") {
-          assigned.appendChild(card);
-        } else if (data.status === "in-progress") {
-          inprogress.appendChild(card);
-        } else {
-          completed.appendChild(card);
-        }
+        if (data.status === "assigned") assigned.appendChild(card);
+        else if (data.status === "in-progress") inprogress.appendChild(card);
+        else completed.appendChild(card);
       });
 
       updateWorkload(totalEU);
     });
 }
 
-
-// UPDATE STATUS
+// Update status
 function updateStatus(id, currentStatus) {
   let newStatus =
     currentStatus === "assigned" ? "in-progress" :
     currentStatus === "in-progress" ? "completed" :
     "assigned";
 
-  db.collection("tasks").doc(id).update({
-    status: newStatus
-  })
-  .then(() => {
-    loadTasks(auth.currentUser.uid);
-  });
+  db.collection("tasks").doc(id).update({ status: newStatus })
+    .then(() => loadTasks(auth.currentUser.uid));
 }
 
-
-// ---------------- EU CALCULATION ----------------
+// ---------------- EU ----------------
 
 function updateWorkload(totalEU) {
   const capacity = 20;
@@ -253,11 +239,19 @@ function updateWorkload(totalEU) {
 
   totalEl.innerText = totalEU;
 
-  let statusText;
+  let statusText, color;
 
-  if (totalEU < capacity) statusText = "Safe";
-  else if (totalEU < capacity + 5) statusText = "Warning";
-  else statusText = "Overloaded";
+  if (totalEU < capacity) {
+    statusText = "Safe";
+    color = "green";
+  } else if (totalEU < capacity + 5) {
+    statusText = "Warning";
+    color = "orange";
+  } else {
+    statusText = "Overloaded";
+    color = "red";
+  }
 
   statusEl.innerText = statusText;
+  statusEl.style.color = color;
 }
