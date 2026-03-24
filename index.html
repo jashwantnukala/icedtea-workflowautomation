@@ -1,39 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Workflow Engine</title>
+  <title>WorkFlow Engine</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="center">
 
   <h1>WorkFlow Sustainability Engine</h1>
+  <p>Manage work based on energy, not time</p>
 
-  <!-- Add Task -->
-  <h3>Add Task</h3>
-  <input type="text" id="taskInput" placeholder="Task name">
-  <input type="number" id="effortInput" placeholder="Effort (EU)">
-  <button onclick="addTask()">Add Task</button>
+  <button onclick="goLogin()">Get Started</button>
 
-  <hr>
-
-  <!-- Workload Summary -->
-  <h3>Workload</h3>
-  <p>Total EU: <span id="totalEU">0</span></p>
-  <p>Status: <span id="status">Safe</span></p>
-
-  <hr>
-
-  <!-- Task List -->
-  <h3>Tasks</h3>
-  <ul id="taskList"></ul>
-
-  <!-- Firebase SDK (COMPAT VERSION) -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
-
-  <!-- Your scripts -->
-  <script src="firebase.js"></script>
-  <script src="app.js"></script>
+  <script>
+    function goLogin() {
+      window.location.href = "login.html";
+    }
+  </script>
 
 </body>
 </html>
