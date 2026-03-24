@@ -1,1 +1,2 @@
-console.log("Firebase connected:", db);
+console.log("App started");
+console.log("Database:", db);
