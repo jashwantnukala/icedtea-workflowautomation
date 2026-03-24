@@ -1,8 +1,11 @@
 console.log("App started");
 
+// ---------------- GLOBAL ----------------
+let currentUserRole = "user";
+
 // ---------------- AUTH ----------------
 
-// SIGN UP
+// SIGNUP
 function signup() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
@@ -11,10 +14,10 @@ function signup() {
     .then((userCredential) => {
       const user = userCredential.user;
 
-      // Save user in Firestore
       db.collection("users").doc(user.uid).set({
         email: user.email,
-        capacity: 20
+        capacity: 20,
+        role: "user"
       });
 
       document.getElementById("message").innerText = "Account created!";
@@ -24,7 +27,6 @@ function signup() {
     });
 }
 
-
 // LOGIN
 function login() {
   const email = document.getElementById("email").value;
@@ -32,13 +34,12 @@ function login() {
 
   auth.signInWithEmailAndPassword(email, password)
     .then(() => {
-      window.location.href = "dashboard.html";
+      // Redirect handled automatically
     })
     .catch((error) => {
       document.getElementById("message").innerText = error.message;
     });
 }
-
 
 // LOGOUT
 function logout() {
@@ -47,12 +48,12 @@ function logout() {
   });
 }
 
-
-// ---------------- AUTH STATE HANDLER ----------------
+// ---------------- AUTH STATE (CORE LOGIC) ----------------
 
 auth.onAuthStateChanged((user) => {
   const page = window.location.pathname;
 
+  // NOT logged in → redirect
   if (!user) {
     if (!page.includes("login.html") && !page.includes("index.html")) {
       window.location.href = "login.html";
@@ -60,23 +61,26 @@ auth.onAuthStateChanged((user) => {
     return;
   }
 
+  // Get role
   db.collection("users").doc(user.uid).get().then((doc) => {
-    const role = doc.data().role;
+    currentUserRole = doc.data().role;
 
     // Redirect based on role
     if (page.includes("login.html") || page.includes("index.html")) {
-      if (role === "admin") {
+      if (currentUserRole === "admin") {
         window.location.href = "admin.html";
       } else {
         window.location.href = "user.html";
       }
+      return;
     }
 
-    // Load correct data
+    // ADMIN PAGE
     if (page.includes("admin.html")) {
       loadUsers();
     }
 
+    // USER PAGE
     if (page.includes("user.html")) {
       loadTasks(user.uid);
     }
@@ -84,19 +88,39 @@ auth.onAuthStateChanged((user) => {
 });
 
 
-// ---------------- TASK SYSTEM ----------------
+// ---------------- ADMIN FUNCTIONS ----------------
 
-// ADD TASK
-function addTask() {
-  const user = auth.currentUser;
+// LOAD USERS INTO DROPDOWN
+function loadUsers() {
+  const userSelect = document.getElementById("userSelect");
+  if (!userSelect) return;
 
-  if (!user) {
-    alert("Login first");
+  userSelect.innerHTML = "";
+
+  db.collection("users").get().then((snapshot) => {
+    snapshot.forEach((doc) => {
+      const user = doc.data();
+
+      const option = document.createElement("option");
+      option.value = doc.id;
+      option.textContent = user.email;
+
+      userSelect.appendChild(option);
+    });
+  });
+}
+
+
+// ASSIGN TASK
+function assignTask() {
+  if (currentUserRole !== "admin") {
+    alert("Only admin can assign tasks");
     return;
   }
 
-  const task = document.getElementById("taskInput").value;
-  const effort = document.getElementById("effortInput").value;
+  const userId = document.getElementById("userSelect").value;
+  const task = document.getElementById("adminTaskInput").value;
+  const effort = document.getElementById("adminEffortInput").value;
 
   if (!task || !effort) {
     alert("Enter task and effort");
@@ -107,28 +131,33 @@ function addTask() {
     title: task,
     effort: Number(effort),
     status: "assigned",
-    userId: user.uid,
+    userId: userId,
     createdAt: Date.now()
   })
   .then(() => {
-    console.log("Task added");
+    console.log("Task assigned");
 
-    document.getElementById("taskInput").value = "";
-    document.getElementById("effortInput").value = "";
-
-    loadTasks(user.uid);
+    document.getElementById("adminTaskInput").value = "";
+    document.getElementById("adminEffortInput").value = "";
   });
 }
 
 
-// LOAD TASKS (ONLY USER'S TASKS)
+// ---------------- USER FUNCTIONS ----------------
+
+// LOAD TASKS INTO COLUMNS
 function loadTasks(userId) {
-  const taskList = document.getElementById("taskList");
-  if (!taskList) return;
-
-  taskList.innerHTML = "";
-
   let totalEU = 0;
+
+  const assigned = document.getElementById("assigned");
+  const inprogress = document.getElementById("inprogress");
+  const completed = document.getElementById("completed");
+
+  if (!assigned || !inprogress || !completed) return;
+
+  assigned.innerHTML = "";
+  inprogress.innerHTML = "";
+  completed.innerHTML = "";
 
   db.collection("tasks")
     .where("userId", "==", userId)
@@ -141,27 +170,25 @@ function loadTasks(userId) {
 
         totalEU += data.effort;
 
-        const li = document.createElement("li");
+        const card = document.createElement("div");
+        card.className = "card";
 
-        li.innerHTML = `
-          ${data.title} (EU: ${data.effort}) [${data.status}]
+        card.innerHTML = `
+          <b>${data.title}</b><br>
+          EU: ${data.effort}<br>
           <button onclick="updateStatus('${id}', '${data.status}')">Next</button>
-          <button onclick="deleteTask('${id}')">Delete</button>
         `;
 
-        taskList.appendChild(li);
+        if (data.status === "assigned") {
+          assigned.appendChild(card);
+        } else if (data.status === "in-progress") {
+          inprogress.appendChild(card);
+        } else {
+          completed.appendChild(card);
+        }
       });
 
       updateWorkload(totalEU);
-    });
-}
-
-
-// DELETE TASK
-function deleteTask(id) {
-  db.collection("tasks").doc(id).delete()
-    .then(() => {
-      loadTasks(auth.currentUser.uid);
     });
 }
 
