@@ -1,69 +1,156 @@
 console.log("App started");
 
-// Capacity limit (can change later)
-const capacity = 20;
+// ---------------- AUTH ----------------
 
-// Add Task
+function signup() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  auth.createUserWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+      const user = userCredential.user;
+
+      // Save user in Firestore
+      db.collection("users").doc(user.uid).set({
+        email: user.email,
+        capacity: 20
+      });
+
+      console.log("User created");
+    })
+    .catch((error) => {
+      console.error(error.message);
+    });
+}
+
+function login() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  auth.signInWithEmailAndPassword(email, password)
+    .then(() => {
+      console.log("Logged in");
+    })
+    .catch((error) => {
+      console.error(error.message);
+    });
+}
+
+function logout() {
+  auth.signOut();
+}
+
+// Detect logged-in user
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    document.getElementById("userInfo").innerText = "Logged in as: " + user.email;
+    loadTasks(user.uid);
+  } else {
+    document.getElementById("userInfo").innerText = "Not logged in";
+  }
+});
+
+
+// ---------------- TASK SYSTEM ----------------
+
+// Add Task (assigned to current user)
 function addTask() {
-  const task = document.getElementById("taskInput").value;
-  const effort = document.getElementById("effortInput").value;
+  const user = auth.currentUser;
 
-  if (!task || !effort) {
-    alert("Enter task and effort");
+  if (!user) {
+    alert("Login first");
     return;
   }
+
+  const task = document.getElementById("taskInput").value;
+  const effort = document.getElementById("effortInput").value;
 
   db.collection("tasks").add({
     title: task,
     effort: Number(effort),
+    status: "assigned",
+    userId: user.uid,
     createdAt: Date.now()
   })
   .then(() => {
     console.log("Task added");
-    loadTasks();
-  })
-  .catch((error) => {
-    console.error("Error:", error);
+    loadTasks(user.uid);
   });
 }
 
-// Load Tasks + Calculate EU
-function loadTasks() {
+
+// Load ONLY current user’s tasks
+function loadTasks(userId) {
   const taskList = document.getElementById("taskList");
   taskList.innerHTML = "";
 
   let totalEU = 0;
 
-  db.collection("tasks").get()
+  db.collection("tasks")
+    .where("userId", "==", userId)
+    .get()
     .then((snapshot) => {
 
       snapshot.forEach((doc) => {
         const data = doc.data();
+        const id = doc.id;
 
         totalEU += data.effort;
 
         const li = document.createElement("li");
-        li.textContent = `${data.title} (EU: ${data.effort})`;
+
+        li.innerHTML = `
+          ${data.title} (EU: ${data.effort}) [${data.status}]
+          <button onclick="updateStatus('${id}', '${data.status}')">Next</button>
+          <button onclick="deleteTask('${id}')">Delete</button>
+        `;
 
         taskList.appendChild(li);
       });
 
-      // Update UI
-      document.getElementById("totalEU").innerText = totalEU;
+      updateWorkload(totalEU);
 
-      if (totalEU < capacity) {
-        document.getElementById("status").innerText = "Safe";
-      } else if (totalEU >= capacity && totalEU < capacity + 5) {
-        document.getElementById("status").innerText = "Warning";
-      } else {
-        document.getElementById("status").innerText = "Overloaded";
-      }
-
-    })
-    .catch((error) => {
-      console.error("Error loading tasks:", error);
     });
 }
 
-// Load tasks on page start
-loadTasks();
+
+// Delete
+function deleteTask(id) {
+  db.collection("tasks").doc(id).delete()
+    .then(() => {
+      loadTasks(auth.currentUser.uid);
+    });
+}
+
+
+// Status update
+function updateStatus(id, currentStatus) {
+  let newStatus =
+    currentStatus === "assigned" ? "in-progress" :
+    currentStatus === "in-progress" ? "completed" :
+    "assigned";
+
+  db.collection("tasks").doc(id).update({
+    status: newStatus
+  })
+  .then(() => {
+    loadTasks(auth.currentUser.uid);
+  });
+}
+
+
+// ---------------- EU CALCULATION ----------------
+
+function updateWorkload(totalEU) {
+  const capacity = 20;
+
+  document.getElementById("totalEU").innerText = totalEU;
+
+  let statusText;
+
+  if (totalEU < capacity) statusText = "Safe";
+  else if (totalEU < capacity + 5) statusText = "Warning";
+  else statusText = "Overloaded";
+
+  document.getElementById("status").innerText = statusText;
+}
