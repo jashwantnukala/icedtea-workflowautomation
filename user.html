@@ -6,43 +6,51 @@
 </head>
 <body>
 
-  <div class="topbar">
-    <h2>User Dashboard</h2>
-    <button onclick="logout()">Logout</button>
+<div class="topbar">
+  <h2>User Dashboard</h2>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<div class="card">
+  <h3>Your Dashboard</h3>
+  <p>
+    Tasks are grouped by status.  
+    Total EU shows your workload and overload risk.
+  </p>
+</div>
+
+<div class="board">
+
+  <div class="column">
+    <h3>Assigned</h3>
+    <div id="assigned"></div>
   </div>
 
-  <div class="board">
-
-    <div class="column">
-      <h3>Assigned</h3>
-      <div id="assigned"></div>
-    </div>
-
-    <div class="column">
-      <h3>In Progress</h3>
-      <div id="inprogress"></div>
-    </div>
-
-    <div class="column">
-      <h3>Completed</h3>
-      <div id="completed"></div>
-    </div>
-
+  <div class="column">
+    <h3>In Progress</h3>
+    <div id="inprogress"></div>
   </div>
 
-  <div class="card workload">
-    <h3>Workload</h3>
-    <p>Total EU: <span id="totalEU">0</span></p>
-    <p>Status: <span id="status">Safe</span></p>
+  <div class="column">
+    <h3>Completed</h3>
+    <div id="completed"></div>
   </div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+</div>
 
-  <script src="firebase.js"></script>
-  <script src="app.js"></script>
+<div class="card">
+  <h3>Workload</h3>
+  <p>Total EU: <span id="totalEU">0</span></p>
+  <p>Status: <span id="status">Safe</span></p>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+<script src="firebase.js"></script>
+<script src="app.js"></script>
 
 </body>
 </html>
