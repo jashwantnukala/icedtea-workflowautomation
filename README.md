@@ -114,21 +114,6 @@ WorkFlow Sustainability Engine introduces a system that:
 
 ---
 
-## Tech Stack
-
-| Layer | Technology |
-|------|-----------|
-| Frontend | React.js |
-| Backend | Node.js (Express) |
-| Database | MongoDB / Firebase Firestore |
-| Authentication | Firebase Auth |
-| Real-time Features | Socket.io / Firebase Realtime DB |
-| Charts | Chart.js |
-| AI Integration | LLM API (privacy layer) |
-| Calendar Integration | Google Calendar API |
-
----
-
 ## How It Works
 
 1. Managers create teams and assign tasks
